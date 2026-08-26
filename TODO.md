@@ -1,0 +1,26 @@
+- [ ] Gestion des logs d'erreur [EN COURS]
+- [x] Gestion des permissions [EN COURS]
+- [ ] Gestion des traductions
+- [x] Gestion de l'authentification [EN COURS]
+- [ ] Liaison artificielle
+- [x] Doc
+- [x] Crea auto des permissions [EN COURS]
+- [x] méthode QUERY [EN COURS]
+- [x] créat auto des routes
+- [x] Ne pas toujours charger les liaisons
+- [x] Gestion orderBy [EN COURS]
+- [x] Gestion limit [EN COURS]
+- [x] Gestion de la pagination [EN COURS]
+- [ ] Recherche soundex
+- [x] Ne jamais redescendre deleted_at
+- [x] Créa des permissions, prendre en compte un fichier de conf
+- [x] Pouvoir masquer des attributs
+- [ ] Erreurs en anglais
+- [ ] Suppression : anonymisation
+- [ ] lower case
+- [ ] cloisonnement
+- [ ] Review
+- [ ] Reedme
+- [ ] Versionning + docker
+- [x] Bruno
+- [ ] Fichier de config intégré pour les permissions, routes, permissions à créer manuellement

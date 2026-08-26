@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+entities/*
+!entities/.gitkeep
+logs/*
+!logs/.gitkeep
+mails/*
+!mails/assets/.gitkeep
+.env
+.env.prod
+do-not-create-permissions.txt
+do-not-create-routes.txt
+README-CMDS.md
+README.md
