@@ -16,14 +16,23 @@ Usage:
     python scripts/sync_permissions.py --exclude-route /health
     python scripts/sync_permissions.py --exclude-route /users --exclude-route /roles
     python scripts/sync_permissions.py --exclude "/permissions/{item_id}:DELETE"
-    python scripts/sync_permissions.py --exclude-file except.txt
+    python scripts/sync_permissions.py --config-file generate-config.json
 
-Fichier --exclude-file (une entrée par ligne, lignes vides et '#...' ignorées) :
-    users               # toutes les méthodes de la route users
-    users/login:POST    # uniquement la méthode POST de users/login
+Fichier --config-file (JSON) :
+    - `exclude.permissions` : routes/méthodes à ne pas créer. Même syntaxe que
+      --exclude-route / --exclude : "users" exclut toutes les méthodes,
+      "users/login:POST" exclut uniquement cette méthode.
+    - `additionnal.permissions` : permissions "libres" (non liées à une route) à
+      créer en plus, une par uid, ex: "KNOWLEDGE_UNLIMITED".
+
+    {
+        "exclude": {"permissions": ["users", "users/login:POST"]},
+        "additionnal": {"permissions": ["KNOWLEDGE_UNLIMITED"]}
+    }
 """
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -58,15 +67,16 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
-        "--exclude-file",
+        "--config-file",
         type=Path,
         default=None,
         metavar="FILE",
         help=(
-            "Fichier listant les routes/méthodes à exclure, une entrée par ligne "
-            "(lignes vides et commentaires '#...' ignorés). Même syntaxe que "
-            "--exclude-route / --exclude : 'users' exclut toutes les méthodes, "
-            "'users/login:POST' exclut uniquement cette méthode."
+            "Fichier de configuration JSON. `exclude.permissions` liste les "
+            "routes/méthodes à ne pas créer (même syntaxe que --exclude-route / "
+            "--exclude : 'users' ou 'users/login:POST'). `additionnal.permissions` "
+            "liste des permissions libres à créer en plus (un uid par entrée, ex: "
+            "'KNOWLEDGE_UNLIMITED'). Exemple : generate-config.json."
         ),
     )
     parser.add_argument(
@@ -91,26 +101,43 @@ def _normalize_route(route: str) -> str:
     return route
 
 
-def _parse_exclude_file(path: Path) -> tuple[set[str], set[tuple[str, str]]]:
+def _parse_config_file(path: Path) -> tuple[set[str], set[tuple[str, str]], list[str]]:
+    """Retourne (routes exclues, paires (route, méthode) exclues, uids additionnels)
+    lus dans `exclude.permissions` et `additionnal.permissions` du JSON."""
     if not path.is_file():
-        raise SystemExit(f"--exclude-file : fichier introuvable : {path}")
+        raise SystemExit(f"--config-file : fichier introuvable : {path}")
+    try:
+        config = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"--config-file : JSON invalide ({path}) : {exc}")
+
+    raw_exclude = config.get("exclude", {}).get("permissions", [])
+    if not isinstance(raw_exclude, list):
+        raise SystemExit(f"--config-file : `exclude.permissions` doit être une liste ({path})")
 
     routes: set[str] = set()
     pairs: set[tuple[str, str]] = set()
-    for lineno, raw_line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
-        line = raw_line.split("#", 1)[0].strip()
-        if not line:
+    for entry in raw_exclude:
+        item = str(entry).strip()
+        if not item:
             continue
-        route, sep, method = line.rpartition(":")
+        route, sep, method = item.rpartition(":")
         if sep:
             if not route or not method:
                 raise SystemExit(
-                    f"--exclude-file : ligne {lineno} invalide (attendu ROUTE:METHOD) : {raw_line!r}"
+                    f"--config-file : entrée `exclude.permissions` invalide "
+                    f"(attendu ROUTE:METHOD) : {entry!r}"
                 )
             pairs.add((route.strip(), method.strip().upper()))
         else:
-            routes.add(line)
-    return routes, pairs
+            routes.add(item)
+
+    raw_additional = config.get("additionnal", {}).get("permissions", [])
+    if not isinstance(raw_additional, list):
+        raise SystemExit(f"--config-file : `additionnal.permissions` doit être une liste ({path})")
+    additional_uids = [str(uid).strip().upper() for uid in raw_additional if str(uid).strip()]
+
+    return routes, pairs, additional_uids
 
 
 def collect_route_methods(app) -> list[tuple[str, str]]:
@@ -140,8 +167,9 @@ def main() -> None:
             raise SystemExit(f"--exclude invalide (attendu ROUTE:METHOD) : {item!r}")
         excluded_pairs.add((route, method.upper()))
 
-    if args.exclude_file:
-        file_routes, file_pairs = _parse_exclude_file(args.exclude_file)
+    additional_uids: list[str] = []
+    if args.config_file:
+        file_routes, file_pairs, additional_uids = _parse_config_file(args.config_file)
         excluded_routes |= file_routes
         excluded_pairs |= file_pairs
 
@@ -163,6 +191,11 @@ def main() -> None:
         uid = build_uid(route, method)
         candidates[uid] = (route, method)
 
+    # Permissions "libres" (additionnal.permissions) : non liées à une route, on
+    # enregistre uniquement l'uid (route/method vides).
+    for uid in additional_uids:
+        candidates.setdefault(uid, ("", ""))
+
     db = SessionLocal()
     try:
         existing_uids = {row[0] for row in db.execute(PermissionModel.table.select().with_only_columns(PermissionModel.table.c.uid))}
@@ -175,6 +208,7 @@ def main() -> None:
 
         print(f"Routes/méthodes trouvées : {len(all_pairs)}")
         print(f"Exclues                  : {skipped_excluded}")
+        print(f"Permissions additionnelles : {len(additional_uids)}")
         print(f"Déjà existantes          : {len(candidates) - len(to_create)}")
         print(f"À créer                  : {len(to_create)}")
 
@@ -182,7 +216,7 @@ def main() -> None:
             return
 
         for uid, (route, method) in sorted(to_create.items()):
-            print(f"  + {uid}  ({method} {route})")
+            print(f"  + {uid}  ({method} {route})" if route or method else f"  + {uid}  (permission libre)")
 
         if args.dry_run:
             print("\n--dry-run : aucune écriture effectuée.")

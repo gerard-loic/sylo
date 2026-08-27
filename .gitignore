@@ -4,13 +4,11 @@ __pycache__/
 .env
 entities/*
 !entities/.gitkeep
+!entities/__init__.py
 logs/*
 !logs/.gitkeep
 mails/*
 !mails/assets/.gitkeep
 .env
 .env.prod
-do-not-create-permissions.txt
-do-not-create-routes.txt
-README-CMDS.md
-README.md
+generate-config.json

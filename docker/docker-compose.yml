@@ -1,0 +1,20 @@
+services:
+  lumi:
+    container_name: '${COMPOSE_PROJECT_NAME}'
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ../:${COMPOSE_PROJECT_PATH}
+    restart: ${COMPOSE_RESTART_POLICY}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${COMPOSE_PROJECT_HOST}`)"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.entrypoints=http"
+      - "traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8002"
+    networks:
+      - traefik-network
+
+networks:
+  traefik-network:
+    external: true

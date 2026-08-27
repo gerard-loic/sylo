@@ -10,7 +10,8 @@ table (ex: `role_permission(role_id, permission_id)`). Toute autre table dotée 
 clé primaire simple est traitée comme une entité.
 
 Une table est automatiquement ignorée (aucun fichier écrit) si :
-  - son nom (ou son nom singulier) figure dans --exclude-file ;
+  - son nom (ou son nom singulier) figure dans la clé `exclude.routes` du
+    --config-file ;
   - une entité du même nom existe déjà sous `entities/` (sauf --force) ou sous
     `app/entities/` (jamais écrasée, c'est le "coeur" de l'application).
 
@@ -21,15 +22,20 @@ enregistrée (`entities/` ou `app/entities/`) est omise (avec un avertissement) 
 Usage:
     python scripts/generate_entities.py --dry-run
     python scripts/generate_entities.py
-    python scripts/generate_entities.py --exclude-file do-not-create.txt
-    python scripts/generate_entities.py --exclude-file do-not-create.txt --force
+    python scripts/generate_entities.py --config-file generate-config.json
+    python scripts/generate_entities.py --config-file generate-config.json --force
 
-Fichier --exclude-file (une entrée par ligne, lignes vides et '#...' ignorées) :
-    users
-    roles
+Fichier --config-file (JSON) : les tables listées dans `exclude.routes` (par nom
+de table ou nom d'entité singulier) ne sont jamais générées.
+    {
+        "exclude": {
+            "routes": ["users", "roles"]
+        }
+    }
 """
 
 import argparse
+import json
 import re
 import sys
 from dataclasses import dataclass, field
@@ -60,13 +66,14 @@ def parse_args() -> argparse.Namespace:
         description="Génère les entités CRUD manquantes à partir des tables de la base."
     )
     parser.add_argument(
-        "--exclude-file",
+        "--config-file",
         type=Path,
         default=None,
         metavar="FILE",
         help=(
-            "Fichier listant les tables à ne jamais générer, une par ligne (lignes "
-            "vides et commentaires '#...' ignorés). Exemple : do-not-create.txt."
+            "Fichier de configuration JSON. Les tables listées dans la clé "
+            "`exclude.routes` (par nom de table ou nom d'entité singulier) ne sont "
+            "jamais générées. Exemple : generate-config.json."
         ),
     )
     parser.add_argument(
@@ -86,15 +93,18 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _parse_exclude_file(path: Path) -> set[str]:
+def _parse_config_file(path: Path) -> set[str]:
+    """Retourne l'ensemble des tables à exclure, lu dans `exclude.routes` du JSON."""
     if not path.is_file():
-        raise SystemExit(f"--exclude-file : fichier introuvable : {path}")
-    names: set[str] = set()
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.split("#", 1)[0].strip()
-        if line:
-            names.add(line)
-    return names
+        raise SystemExit(f"--config-file : fichier introuvable : {path}")
+    try:
+        config = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"--config-file : JSON invalide ({path}) : {exc}")
+    routes = config.get("exclude", {}).get("routes", [])
+    if not isinstance(routes, list):
+        raise SystemExit(f"--config-file : `exclude.routes` doit être une liste ({path})")
+    return {str(name).strip() for name in routes if str(name).strip()}
 
 
 def singularize(table_name: str) -> str:
@@ -304,7 +314,7 @@ def render_routes() -> str:
 def main() -> None:
     args = parse_args()
 
-    excluded = _parse_exclude_file(args.exclude_file) if args.exclude_file else set()
+    excluded = _parse_config_file(args.config_file) if args.config_file else set()
 
     from app.database import engine
 
@@ -349,7 +359,7 @@ def main() -> None:
     skipped: list[tuple[str, str]] = []
     for table_name, entity_name in entity_name_of.items():
         if table_name in excluded or entity_name in excluded:
-            skipped.append((table_name, "exclue (--exclude-file)"))
+            skipped.append((table_name, "exclue (exclude.routes du --config-file)"))
             continue
         if table_name in core_by_table:
             skipped.append((table_name, f"déjà implémentée dans app/entities/{core_by_table[table_name]}/"))

@@ -2,7 +2,7 @@
 - [x] Gestion des permissions [EN COURS]
 - [ ] Gestion des traductions
 - [x] Gestion de l'authentification [EN COURS]
-- [ ] Liaison artificielle
+- [x] Liaison artificielle
 - [x] Doc
 - [x] Crea auto des permissions [EN COURS]
 - [x] méthode QUERY [EN COURS]
@@ -24,3 +24,4 @@
 - [ ] Versionning + docker
 - [x] Bruno
 - [ ] Fichier de config intégré pour les permissions, routes, permissions à créer manuellement
+- [x] Vérifier que le serveur MCP donne des informations sur l'utilisation des filtres

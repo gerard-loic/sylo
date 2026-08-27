@@ -20,6 +20,12 @@ def mark_public(path: str, method: str) -> None:
     _PUBLIC_ROUTES.add((path, method.upper()))
 
 
+def is_public_route(path: str, method: str) -> bool:
+    """Utilisé par `app/mcp/` pour savoir si une route nécessite une permission avant
+    d'exposer l'outil correspondant (voir `catalog.py`)."""
+    return (path, method.upper()) in _PUBLIC_ROUTES
+
+
 def _extract_token(request: Request) -> str | None:
     header = request.headers.get("authorization")
     if not header:
@@ -30,7 +36,7 @@ def _extract_token(request: Request) -> str | None:
     return value
 
 
-def _user_has_permission(db: Session, user_id: int, uid: str) -> bool:
+def user_has_permission(db: Session, user_id: int, uid: str) -> bool:
     """`uid` suit la même convention que `scripts/sync_permissions.py`
     (ex: "/USERS/{ITEM_ID}_DELETE") : la permission liée à une route/méthode."""
     user_role = get_association_table("user_role")
@@ -56,22 +62,12 @@ def _user_has_permission(db: Session, user_id: int, uid: str) -> bool:
     return db.execute(query).first() is not None
 
 
-def authenticate(request: Request, db: Session) -> int:
-    """Exige un Bearer token valide (table `user_tokens`, non expiré) et vérifie que
-    l'utilisateur associé a la permission liée à la route/méthode courante
-    (`permissions` via `role_permission` / `user_role`). Renvoie l'id de l'utilisateur
-    authentifié. Factorisé hors de `enforce_auth` pour être appelable directement par
-    une route marquée publique mais qui n'accepte le Bearer que comme une des
-    authentifications possibles (voir `entities/user/routes.py`, PUT /users/{item_id}).
+def resolve_user_id(db: Session, token: str) -> int:
+    """Valide un token (table `user_tokens`, non expiré, utilisateur non supprimé) et
+    renvoie l'id utilisateur associé, ou lève `UnauthorizedError`. Factorisé hors de
+    `authenticate()` pour être réutilisable par `app/mcp/` (outil "login_user"), qui
+    authentifie une session MCP sans passer par une `Request` FastAPI.
     """
-    route = request.scope.get("route")
-    path = getattr(route, "path", request.url.path)
-    method = request.method.upper()
-
-    token = _extract_token(request)
-    if token is None:
-        raise UnauthorizedError("Authentification requise (Bearer token manquant).")
-
     token_model = get_model("usertoken")
     token_row = (
         db.query(token_model.python_class)
@@ -98,11 +94,32 @@ def authenticate(request: Request, db: Session) -> int:
     if user_row is None:
         raise UnauthorizedError("Token invalide.")
 
+    return token_row.user_id
+
+
+def authenticate(request: Request, db: Session) -> int:
+    """Exige un Bearer token valide et vérifie que l'utilisateur associé a la
+    permission liée à la route/méthode courante (`permissions` via `role_permission` /
+    `user_role`). Renvoie l'id de l'utilisateur authentifié. Factorisé hors de
+    `enforce_auth` pour être appelable directement par une route marquée publique mais
+    qui n'accepte le Bearer que comme une des authentifications possibles (voir
+    `entities/user/routes.py`, PUT /users/{item_id}).
+    """
+    route = request.scope.get("route")
+    path = getattr(route, "path", request.url.path)
+    method = request.method.upper()
+
+    token = _extract_token(request)
+    if token is None:
+        raise UnauthorizedError("Authentification requise (Bearer token manquant).")
+
+    user_id = resolve_user_id(db, token)
+
     uid = f"{path}_{method}".upper()
-    if not _user_has_permission(db, token_row.user_id, uid):
+    if not user_has_permission(db, user_id, uid):
         raise ForbiddenError("Permission manquante pour cette route.")
 
-    return token_row.user_id
+    return user_id
 
 
 def enforce_auth(request: Request, db: Session = Depends(get_db)) -> None:

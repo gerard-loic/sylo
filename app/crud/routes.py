@@ -20,6 +20,15 @@ _ORDERBY_DESCRIPTION = (
     "Tri, ex: email.ASC ou email.DESC (plusieurs champs séparés par des virgules)."
 )
 
+_FILTER_DESCRIPTION = (
+    "Expression de filtre sur les colonnes de l'entité, ex: \"status == 'active' AND "
+    "(age >= 18 OR role IN ('admin', 'owner') OR name LIKE 'ali')\". Opérateurs : == "
+    "!= < > <= >= IN, NOT IN, LIKE (recherche insensible à la casse, 'contient', "
+    "uniquement sur des champs texte). AND est prioritaire sur OR, parenthèses "
+    "supportées. Valeurs : nombre, 'texte' entre quotes, true/false, null, ou liste "
+    "entre parenthèses pour IN/NOT IN, ex: role IN ('admin', 'owner')."
+)
+
 
 def _parse_with(with_: str | None) -> list[str]:
     if not with_:
@@ -39,7 +48,7 @@ class _QueryPayload(BaseModel):
     riche pour une query string) voyage dans le corps de la requête plutôt que dans
     l'URL. `QUERY` est une méthode sûre et idempotente au même titre que `GET`."""
 
-    filter: str | None = None
+    filter: str | None = Field(default=None, description=_FILTER_DESCRIPTION)
     limit: int = Field(default=_settings.default_page_size, ge=1, le=_settings.max_page_size)
     offset: int = Field(default=0, ge=0)
     page: int | None = Field(default=None, ge=1)

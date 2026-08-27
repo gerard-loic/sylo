@@ -21,6 +21,15 @@ class Settings(BaseSettings):
     auth_token_ttl_minutes: int = 1440
     password_setup_url_prefix: str = "http://monsite.fr/choixmotdepasse?token="
 
+    # Serveur MCP (app/mcp/) : désactivé par défaut, monté sur /mcp si activé (voir
+    # app/main.py). Expose dynamiquement un outil par route réelle de l'API, filtré
+    # selon les permissions de l'utilisateur authentifié via l'outil "login_user".
+    mcp_enabled: bool = False
+    # Fichier optionnel listant les routes à ne pas exposer comme outils MCP, même
+    # syntaxe que --exclude-file dans scripts/sync_permissions.py (une entrée par
+    # ligne, "route" ou "route:METHODE", lignes vides et '#...' ignorées).
+    mcp_exclude_file: str | None = None
+
     model_config = SettingsConfigDict(env_file=".env", env_prefix="WAKARU_", extra="ignore")
 
 

@@ -1,10 +1,12 @@
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.auth import enforce_auth, mark_public
+from app.config import get_settings
 from app.database import engine
 from app.exceptions import ApiError
 from app.logs import configure_error_logger
@@ -12,11 +14,27 @@ from app.responses import error_response
 from entities import register_entities
 
 logger = configure_error_logger(logging.getLogger("wakaru_api"))
+_settings = get_settings()
+
+# Renseigné plus bas si WAKARU_MCP_ENABLED (voir la fin du fichier) : `lifespan` y
+# fait référence par nom, résolu seulement au démarrage réel du serveur, une fois le
+# module entièrement chargé.
+_mcp_manager = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if _mcp_manager is None:
+        yield
+        return
+    async with _mcp_manager.run():
+        yield
+
 
 # `enforce_auth` (app/auth.py) s'applique à toutes les routes de l'app : Bearer token
 # + permission requis par défaut. Les exceptions (ex: /users/login) sont déclarées
 # dans le code via `mark_public()`, voir app/entities/user/routes.py.
-app = FastAPI(title="Wakaru API", dependencies=[Depends(enforce_auth)])
+app = FastAPI(title="Wakaru API", dependencies=[Depends(enforce_auth)], lifespan=lifespan)
 
 mark_public("/health", "GET")
 
@@ -56,3 +74,11 @@ def health_check() -> dict:
 
 
 register_entities(app, engine)
+
+if _settings.mcp_enabled:
+    # Doit être construit après register_entities() : le catalogue d'outils MCP est
+    # dérivé des routes réellement enregistrées (voir app/mcp/catalog.py).
+    from app.mcp.server import build_session_manager
+
+    _mcp_manager = build_session_manager(app)
+    app.mount("/mcp", _mcp_manager.handle_request)
