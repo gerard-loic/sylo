@@ -8,7 +8,10 @@ __pycache__
 docker
 Makefile
 README.md
-todo.md
+TODO.md
+entities
+mails
+logs
 
 # Données locales et secrets — jamais dans une couche d'image
 !.env
