@@ -32,7 +32,7 @@ if [ ! -f "$SCRIPT" ]; then
     exit 1
 fi
 
-if [ -f .venv/bin/activate ]; then
+if [ ! -f /.dockerenv ] && [ -f .venv/bin/activate ]; then
     source .venv/bin/activate
 fi
 

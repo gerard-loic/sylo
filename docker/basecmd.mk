@@ -8,6 +8,9 @@ up: ## Lance l'environement de production
 down: ## Arrête les conteneurs de prod et supprime les conteneurs, les réseaux, les volumes et les images
 	@docker compose --env-file docker/.env -f docker/docker-compose.yml down
 
+cmd: ## Exécute une commande scripts/ dans le conteneur : make cmd c="create_role --name Admin --uid ADMIN"
+	@docker compose --env-file docker/.env -f docker/docker-compose.yml exec sylo ./cmd.sh $(c)
+
 
 help: ## Affiche la liste des commandes disponibles
 	@IFS=$$'\n' ; \

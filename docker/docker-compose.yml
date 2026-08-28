@@ -1,11 +1,16 @@
 services:
-  lumi:
+  sylo:
     container_name: '${COMPOSE_PROJECT_NAME}'
     build:
       context: ../
       dockerfile: docker/Dockerfile
     volumes:
       - ../:${COMPOSE_PROJECT_PATH}
+      # Volumes anonymes : masquent le .venv et les caches de l'hôte (Python 3.13
+      # miniforge) qui fuiraient via le bind mount ci-dessus et casseraient
+      # ./cmd.sh dans le conteneur (Python 3.12 de l'image).
+      - ${COMPOSE_PROJECT_PATH}/.venv
+      - ${COMPOSE_PROJECT_PATH}/__pycache__
     restart: ${COMPOSE_RESTART_POLICY}
     labels:
       - "traefik.enable=true"
