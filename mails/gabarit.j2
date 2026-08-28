@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <body style="font-family: sans-serif; margin: 0; padding: 0;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 24px;">
+      <header style="margin-bottom: 24px;">
+        <img src="cid:header_logo" alt="Wakaru" style="max-width: 100%; display: block;">
+      </header>
+
+      {% block content %}{% endblock %}
+
+      <footer style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e5e5; font-size: 12px; color: #888;">
+        <img src="cid:footer_logo" alt="" style="max-width: 100%; display: block; margin-bottom: 8px;">
+        <p>Wakaru — cet email vous a été envoyé automatiquement, merci de ne pas y répondre.</p>
+      </footer>
+    </div>
+  </body>
+</html>

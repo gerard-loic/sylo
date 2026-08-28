@@ -9,9 +9,18 @@ docker
 Makefile
 README.md
 TODO.md
-entities
-mails
-logs
+# Le package `entities` doit exister dans l'image (app/main.py fait
+# `from entities import register_entities`), mais son contenu est propre à
+# chaque projet et fourni au runtime (volume / bind mount), jamais figé ici.
+entities/*
+!entities/__init__.py
+
+# logs/ : sorties runtime uniquement, le dossier se recrée seul (app/logs.py).
+logs/*
+!logs/.gitkeep
+
+# mails/ : les gabarits par défaut SONT embarqués dans l'image ; un projet peut
+# les surcharger au runtime via un volume monté sur /app/mails.
 
 # Données locales et secrets — jamais dans une couche d'image
 !.env

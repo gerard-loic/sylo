@@ -7,8 +7,13 @@ entities/*
 !entities/__init__.py
 logs/*
 !logs/.gitkeep
+# Gabarits par défaut versionnés (embarqués dans l'image) ; les dossiers de
+# gabarits ajoutés par un projet restent hors du dépôt de base.
 mails/*
-!mails/assets/.gitkeep
+!mails/gabarit.j2
+!mails/assets/
+!mails/set_password/
+!mails/welcome/
 .env
 .env.prod
 generate-config.json

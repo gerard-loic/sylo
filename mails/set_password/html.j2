@@ -1,0 +1,8 @@
+{% extends "gabarit.j2" %}
+
+{% block content %}
+  <p>Bonjour {{ name }},</p>
+  <p>Votre compte Wakaru a été créé. Pour finaliser votre inscription, choisissez votre mot de passe :</p>
+  <p><a href="{{ password_url }}">Choisir mon mot de passe</a></p>
+  <p>À bientôt.</p>
+{% endblock %}
