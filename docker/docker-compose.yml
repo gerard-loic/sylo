@@ -11,6 +11,15 @@ services:
       # ./cmd.sh dans le conteneur (Python 3.12 de l'image).
       - ${COMPOSE_PROJECT_PATH}/.venv
       - ${COMPOSE_PROJECT_PATH}/__pycache__
+      # Entités du projet : générées au runtime par `scripts/generate_entities.py`
+      # (make cmd c="generate_entities ..."). Bind mount explicite pour que les
+      # fichiers écrits dans le conteneur restent accessibles/éditables sur l'hôte
+      # et survivent à un recreate. Redondant tant que `../:/app` ci-dessus est
+      # présent, mais indispensable si le service tourne depuis l'image publiée
+      # (`image: ghcr.io/...`) sans ce mount global.
+      # Le dossier hôte ../entities/ DOIT contenir __init__.py (le loader embarqué
+      # dans l'image, requis par app/main.py) : ce mount le masque sinon.
+      - ../entities:${COMPOSE_PROJECT_PATH}/entities
     restart: ${COMPOSE_RESTART_POLICY}
     labels:
       - "traefik.enable=true"
