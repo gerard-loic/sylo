@@ -22,6 +22,11 @@ logs/*
 # mails/ : les gabarits par défaut SONT embarqués dans l'image ; un projet peut
 # les surcharger au runtime via un volume monté sur /app/mails.
 
+# config/ : fichiers de config des scripts (generate-config.json...), fournis au
+# runtime via un volume monté sur /app/config, jamais figés dans l'image.
+config/*
+!config/.gitkeep
+
 # Données locales et secrets — jamais dans une couche d'image. Les variables
 # WAKARU_* sont fournies au runtime (env_file / -e), voir .env.example.
 .env

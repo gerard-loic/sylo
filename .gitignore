@@ -16,4 +16,6 @@ mails/*
 !mails/welcome/
 .env
 .env.prod
-generate-config.json
+# Fichiers de config des scripts fournis au runtime (montés sur /app/config).
+config/*
+!config/.gitkeep

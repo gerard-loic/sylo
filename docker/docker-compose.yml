@@ -20,6 +20,14 @@ services:
       # Le dossier hôte ../entities/ DOIT contenir __init__.py (le loader embarqué
       # dans l'image, requis par app/main.py) : ce mount le masque sinon.
       - ../entities:${COMPOSE_PROJECT_PATH}/entities
+      # Gabarits d'emails : les gabarits par défaut sont embarqués dans l'image ;
+      # ce bind mount les rend éditables sur l'hôte et permet d'en ajouter. Le
+      # dossier hôte ../mails/ DOIT contenir les gabarits par défaut (gabarit.j2,
+      # set_password/, welcome/, assets/) sinon ce mount les masque.
+      - ../mails:${COMPOSE_PROJECT_PATH}/mails
+      # Fichiers de configuration des scripts (ex: generate-config.json), fournis
+      # au runtime. Usage : make cmd c="generate_entities --config-file config/generate-config.json"
+      - ../config:${COMPOSE_PROJECT_PATH}/config
     restart: ${COMPOSE_RESTART_POLICY}
     labels:
       - "traefik.enable=true"
