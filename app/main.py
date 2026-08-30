@@ -13,10 +13,10 @@ from app.logs import configure_error_logger
 from app.responses import error_response
 from entities import register_entities
 
-logger = configure_error_logger(logging.getLogger("wakaru_api"))
+logger = configure_error_logger(logging.getLogger("sylo_api"))
 _settings = get_settings()
 
-# Renseigné plus bas si WAKARU_MCP_ENABLED (voir la fin du fichier) : `lifespan` y
+# Renseigné plus bas si SYLO_MCP_ENABLED (voir la fin du fichier) : `lifespan` y
 # fait référence par nom, résolu seulement au démarrage réel du serveur, une fois le
 # module entièrement chargé.
 _mcp_manager = None
@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
 # `enforce_auth` (app/auth.py) s'applique à toutes les routes de l'app : Bearer token
 # + permission requis par défaut. Les exceptions (ex: /users/login) sont déclarées
 # dans le code via `mark_public()`, voir app/entities/user/routes.py.
-app = FastAPI(title="Wakaru API", dependencies=[Depends(enforce_auth)], lifespan=lifespan)
+app = FastAPI(title="Sylo API", dependencies=[Depends(enforce_auth)], lifespan=lifespan)
 
 mark_public("/health", "GET")
 

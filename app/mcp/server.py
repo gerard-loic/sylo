@@ -75,7 +75,7 @@ def build_session_manager(app: FastAPI) -> StreamableHTTPSessionManager:
     operations_by_name: dict[str, McpOperation] = {op.tool_name: op for op in catalog}
 
     server = Server(
-        "wakaru-api",
+        "sylo-api",
         instructions=(
             "Passez votre token Bearer (obtenu via POST /users/login) dans l'en-tête "
             "Authorization de la connexion à ce serveur MCP. La liste d'outils "

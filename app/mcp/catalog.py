@@ -148,10 +148,10 @@ def parse_exclude_file(path: Path) -> tuple[set[str], set[tuple[str, str]], set[
                              # custom...), utile pour retirer une entité entière.
 
     Réutilisé tel quel pour exclure des routes du catalogue MCP (voir
-    `WAKARU_MCP_EXCLUDE_FILE`, `app/config.py`).
+    `SYLO_MCP_EXCLUDE_FILE`, `app/config.py`).
     """
     if not path.is_file():
-        raise FileNotFoundError(f"WAKARU_MCP_EXCLUDE_FILE : fichier introuvable : {path}")
+        raise FileNotFoundError(f"SYLO_MCP_EXCLUDE_FILE : fichier introuvable : {path}")
 
     routes: set[str] = set()
     pairs: set[tuple[str, str]] = set()
@@ -164,7 +164,7 @@ def parse_exclude_file(path: Path) -> tuple[set[str], set[tuple[str, str]], set[
         if sep:
             if not route or not method:
                 raise ValueError(
-                    f"WAKARU_MCP_EXCLUDE_FILE : ligne {lineno} invalide (attendu ROUTE:METHOD) : {raw_line!r}"
+                    f"SYLO_MCP_EXCLUDE_FILE : ligne {lineno} invalide (attendu ROUTE:METHOD) : {raw_line!r}"
                 )
             if method.strip() == "*":
                 prefixes.add(_normalize_route(route))

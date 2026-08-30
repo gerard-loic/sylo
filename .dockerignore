@@ -28,7 +28,7 @@ config/*
 !config/.gitkeep
 
 # Données locales et secrets — jamais dans une couche d'image. Les variables
-# WAKARU_* sont fournies au runtime (env_file / -e), voir .env.example.
+# SYLO_* sont fournies au runtime (env_file / -e), voir .env.example.
 .env
 .env.*
 !.env.example

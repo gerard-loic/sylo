@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    database_url: str = "postgresql+psycopg2://wakaru:wakaru@localhost:5432/wakaru"
+    database_url: str = "postgresql+psycopg2://sylo:sylo@localhost:5432/sylo"
     default_page_size: int = 50
     max_page_size: int = 200
 
@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     smtp_password: str | None = None
     smtp_use_tls: bool = True
     smtp_use_ssl: bool = False
-    mail_from_address: str = "no-reply@wakaru.local"
-    mail_from_name: str = "Wakaru"
+    mail_from_address: str = "no-reply@sylo.local"
+    mail_from_name: str = "Sylo"
 
     password_hash_rounds: int = 12
     auth_token_ttl_minutes: int = 1440
@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     # ligne, "route" ou "route:METHODE", lignes vides et '#...' ignorées).
     mcp_exclude_file: str | None = None
 
-    model_config = SettingsConfigDict(env_file=".env", env_prefix="WAKARU_", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", env_prefix="SYLO_", extra="ignore")
 
 
 @lru_cache

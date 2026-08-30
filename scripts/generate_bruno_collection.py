@@ -18,7 +18,7 @@ supportée par Bruno) est omise ; son équivalent `POST /<entité>/query` est co
 
 Usage:
     python scripts/generate_bruno_collection.py
-    python scripts/generate_bruno_collection.py --output bruno/wakaru_api.zip
+    python scripts/generate_bruno_collection.py --output bruno/sylo_api.zip
     python scripts/generate_bruno_collection.py --base-url http://localhost:8000
 """
 
@@ -57,9 +57,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=ROOT / "wakaru_api_bruno_collection.zip",
+        default=ROOT / "sylo_api_bruno_collection.zip",
         metavar="FILE",
-        help="Chemin du zip généré (défaut: wakaru_api_bruno_collection.zip à la racine).",
+        help="Chemin du zip généré (défaut: sylo_api_bruno_collection.zip à la racine).",
     )
     parser.add_argument(
         "--base-url",
@@ -69,9 +69,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--collection-name",
-        default="Wakaru API",
+        default="Sylo API",
         metavar="NAME",
-        help="Nom de la collection Bruno (défaut: 'Wakaru API').",
+        help="Nom de la collection Bruno (défaut: 'Sylo API').",
     )
     return parser.parse_args()
 
