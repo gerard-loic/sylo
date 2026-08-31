@@ -7,13 +7,12 @@ entities/*
 !entities/__init__.py
 logs/*
 !logs/.gitkeep
-# Gabarits par défaut versionnés (embarqués dans l'image) ; les dossiers de
-# gabarits ajoutés par un projet restent hors du dépôt de base.
+# Gabarits d'emails : les gabarits par défaut sont embarqués dans le core
+# (app/mail/templates/, versionné). mails/ ne sert qu'à les surcharger ou à en
+# ajouter de nouveaux ; son contenu reste donc hors du dépôt de base.
 mails/*
-!mails/gabarit.j2
 !mails/assets/
-!mails/set_password/
-!mails/welcome/
+!mails/assets/.gitkeep
 .env
 .env.prod
 # Fichiers de config des scripts fournis au runtime (montés sur /app/config).

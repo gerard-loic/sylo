@@ -69,5 +69,6 @@ class MailAssetNotFoundError(MailError):
     def __init__(self, cid: str, template: str):
         super().__init__(
             f"Image '{cid}' référencée par le gabarit '{template}' introuvable "
-            f"(cherchée dans mails/{template}/assets/ et mails/assets/)."
+            f"(cherchée dans mails/{template}/assets/, app/mail/templates/{template}/assets/, "
+            f"mails/assets/ et app/mail/templates/assets/)."
         )

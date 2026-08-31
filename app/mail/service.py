@@ -5,7 +5,7 @@ from email.message import EmailMessage
 from pathlib import Path
 from typing import NamedTuple
 
-from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
+from jinja2 import ChoiceLoader, Environment, FileSystemLoader, TemplateNotFound, select_autoescape
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -14,13 +14,19 @@ from app.crud.model import get_model
 from app.entities.sendmail.methods import SendmailMethods
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
-_TEMPLATES_DIR = _PROJECT_ROOT / "mails"
-_SHARED_ASSETS_DIR = _TEMPLATES_DIR / "assets"
+# Gabarits par défaut embarqués dans le core (versionnés avec l'app).
+_CORE_TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
+# Surcharge projet : un fichier de même chemin relatif y est prioritaire sur le
+# core, et on peut y ajouter de nouveaux gabarits/assets sans toucher à app/.
+_OVERLAY_TEMPLATES_DIR = _PROJECT_ROOT / "mails"
 
 _CID_PATTERN = re.compile(r'cid:([\w.-]+)')
 
 _env = Environment(
-    loader=FileSystemLoader(_TEMPLATES_DIR),
+    loader=ChoiceLoader([
+        FileSystemLoader(_OVERLAY_TEMPLATES_DIR),
+        FileSystemLoader(_CORE_TEMPLATES_DIR),
+    ]),
     autoescape=select_autoescape(["html", "j2"]),
     trim_blocks=True,
     lstrip_blocks=True,
@@ -37,15 +43,22 @@ class SentMail(NamedTuple):
 
 
 class MailService:
-    """Envoie des emails à partir de gabarits Jinja2 rangés dans `mails/` (racine du projet).
+    """Envoie des emails à partir de gabarits Jinja2.
 
-    Un gabarit `<nom>` est un dossier `mails/<nom>/` composé de `subject.j2` (sujet) et
+    Les gabarits par défaut sont embarqués dans le core, sous `app/mail/templates/`.
+    Le dossier `mails/` (racine du projet) permet de les surcharger : un fichier de
+    même chemin relatif y est prioritaire (ex: `mails/welcome/html.j2` remplace
+    celui du core), et on peut y ajouter de nouveaux gabarits ou de nouveaux
+    assets sans toucher à `app/`.
+
+    Un gabarit `<nom>` est un dossier `<nom>/` composé de `subject.j2` (sujet) et
     `html.j2` (corps HTML). `txt.j2` est optionnel et fournit l'alternative texte brut ;
     à défaut elle est dérivée du HTML.
 
     Une image référencée dans le HTML via `<img src="cid:<clé>">` est automatiquement
-    intégrée à l'email : le fichier `<clé>.*` est cherché dans `mails/<nom>/assets/`
-    (spécifique au gabarit) puis dans `mails/assets/` (partagé, ex: mails/gabarit.j2).
+    intégrée à l'email : le fichier `<clé>.*` est cherché dans `<nom>/assets/`
+    (spécifique au gabarit) puis dans `assets/` (partagé, ex: gabarit.j2), en
+    regardant d'abord dans `mails/` (surcharge) puis dans `app/mail/templates/` (core).
     """
 
     def send(
@@ -97,16 +110,22 @@ class MailService:
 
     def _embed_images(self, message: EmailMessage, html_body: str, template: str) -> None:
         """Intègre chaque image référencée en `cid:<nom>` dans le HTML. Le fichier est
-        cherché par nom (`<nom>.*`, extension libre) d'abord dans `mails/<template>/assets/`
-        (propre au gabarit), puis dans `mails/assets/` (partagé, ex: gabarit.j2). Aucune
-        liste à maintenir côté Python : il suffit de déposer le fichier au bon endroit.
+        cherché par nom (`<nom>.*`, extension libre), du plus spécifique/prioritaire au
+        plus générique : surcharge (`mails/`) puis core (`app/mail/templates/`), gabarit
+        puis partagé (ex: gabarit.j2). Aucune liste à maintenir côté Python : il suffit
+        de déposer le fichier au bon endroit.
         """
         cids = dict.fromkeys(_CID_PATTERN.findall(html_body))
         if not cids:
             return
 
         html_part = message.get_body(preferencelist=("html",))
-        search_dirs = (_TEMPLATES_DIR / template / "assets", _SHARED_ASSETS_DIR)
+        search_dirs = (
+            _OVERLAY_TEMPLATES_DIR / template / "assets",
+            _CORE_TEMPLATES_DIR / template / "assets",
+            _OVERLAY_TEMPLATES_DIR / "assets",
+            _CORE_TEMPLATES_DIR / "assets",
+        )
         for cid in cids:
             path = next(
                 (match for directory in search_dirs for match in sorted(directory.glob(f"{cid}.*"))),

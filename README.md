@@ -22,3 +22,4 @@ Générer une collection Bruno (zip) : ./cmd.sh generate_bruno_collection (--out
 
 MCP :
 http://localhost:8000/mcp
+make cmd c="sync_permissions --dry-run
