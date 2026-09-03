@@ -8,6 +8,12 @@ class Settings(BaseSettings):
     default_page_size: int = 50
     max_page_size: int = 200
 
+    # Origines autorisées pour CORS (voir app/main.py). "*" = toutes, adapté à une API
+    # publique authentifiée au Bearer token (pas de cookie => allow_credentials inutile).
+    # Pour restreindre, surcharger via SYLO_CORS_ALLOW_ORIGINS au format JSON, ex :
+    # SYLO_CORS_ALLOW_ORIGINS='["http://localhost:8443","https://mon-app.figma.site"]'
+    cors_allow_origins: list[str] = ["*"]
+
     smtp_host: str = "localhost"
     smtp_port: int = 587
     smtp_user: str | None = None

@@ -78,9 +78,9 @@ def resolve_user_id(db: Session, token: str) -> int:
         .first()
     )
     if token_row is None:
-        raise UnauthorizedError("Token invalide.")
+        raise UnauthorizedError("Invalid token")
     if token_row.expires_at < datetime.utcnow():
-        raise UnauthorizedError("Token expiré.")
+        raise UnauthorizedError("Expired token")
 
     user_model = get_model("user")
     user_row = (
@@ -92,7 +92,7 @@ def resolve_user_id(db: Session, token: str) -> int:
         .first()
     )
     if user_row is None:
-        raise UnauthorizedError("Token invalide.")
+        raise UnauthorizedError("Invalid token")
 
     return token_row.user_id
 
@@ -111,13 +111,13 @@ def authenticate(request: Request, db: Session) -> int:
 
     token = _extract_token(request)
     if token is None:
-        raise UnauthorizedError("Authentification requise (Bearer token manquant).")
+        raise UnauthorizedError("Authentication required (Bearer token required).")
 
     user_id = resolve_user_id(db, token)
 
     uid = f"{path}_{method}".upper()
     if not user_has_permission(db, user_id, uid):
-        raise ForbiddenError("Permission manquante pour cette route.")
+        raise ForbiddenError("No permission for this route")
 
     return user_id
 

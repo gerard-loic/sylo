@@ -50,7 +50,10 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    email = args.email.strip()
+    # Aligné sur UserMethods._normalize_email : l'email (login) est toujours en
+    # minuscules, sinon la pré-vérification d'unicité ci-dessous passe à côté d'un
+    # doublon écrit en minuscules par la route/API.
+    email = args.email.strip().lower()
     first_name = args.first_name.strip()
     last_name = args.last_name.strip()
     role_uid = args.role_uid.strip().upper() if args.role_uid else None

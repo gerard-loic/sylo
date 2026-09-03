@@ -8,3 +8,4 @@ class PermissionModel(EntityModel):
     table_name = "permissions"
     relationships = [
     ]
+    anonymized_fields = ("uid",)

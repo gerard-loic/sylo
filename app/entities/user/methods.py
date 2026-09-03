@@ -16,7 +16,7 @@ class UserMethods(BaseCRUDMethods):
     """Exemple de méthode métier surchargée/ajoutée en plus du CRUD générique."""
 
     def create(self, db: Session, data: dict, with_: Iterable[str] = ()):
-        data = self._hash_password(data)
+        data = self._hash_password(self._normalize_email(data))
 
         if data.get("password"):
             user = super().create(db, {**data, "initial_token": None}, with_=with_)
@@ -46,7 +46,9 @@ class UserMethods(BaseCRUDMethods):
         return user
 
     def update(self, db: Session, item_id, data: dict, with_: Iterable[str] = ()):
-        return super().update(db, item_id, self._hash_password(data), with_=with_)
+        return super().update(
+            db, item_id, self._hash_password(self._normalize_email(data)), with_=with_
+        )
 
     def get_by_initial_token(self, db: Session, token: str):
         return (
@@ -60,14 +62,24 @@ class UserMethods(BaseCRUDMethods):
             return data
         return {**data, "password": hash_password(data["password"])}
 
+    @staticmethod
+    def _normalize_email(data: dict) -> dict:
+        """L'email sert de login : on le stocke systématiquement en minuscules et sans
+        espaces superflus pour que la recherche à la connexion soit insensible à la
+        casse (voir `login`)."""
+        if not data.get("email"):
+            return data
+        return {**data, "email": data["email"].strip().lower()}
+
     def login(self, db: Session, email: str, password: str) -> dict:
+        email = email.strip().lower()
         user = (
             db.query(self.model.python_class)
             .filter(self.model.python_class.email == email, self._not_deleted())
             .first()
         )
         if user is None or not user.password or not verify_password(password, user.password):
-            raise UnauthorizedError("Email ou mot de passe incorrect.")
+            raise UnauthorizedError("Email or password incorrect")
 
         settings = get_settings()
         token = generate_token()

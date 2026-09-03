@@ -23,6 +23,11 @@ class EntityModel:
     # l'API, quelle que soit la route. Ne les exclut pas des validateurs create/update :
     # elles restent écrivables, seule la lecture est bloquée.
     hidden_fields: ClassVar[frozenset[str]] = frozenset()
+    # Attributs anonymisés lors d'une suppression : la ligne n'est jamais réellement
+    # supprimée (seul `deleted_at` est renseigné), et la valeur de chacune de ces
+    # colonnes est remplacée par une chaîne unique préfixée par `***` (voir
+    # `BaseCRUDMethods.delete`). Vide par défaut : aucune anonymisation.
+    anonymized_fields: ClassVar[tuple[str, ...]] = ()
 
     # Renseigné dynamiquement par build_orm_mappings(), ne pas définir à la main.
     table: ClassVar[Any] = None
@@ -45,7 +50,15 @@ class EntityModel:
 
 def register_model(model_cls: type[EntityModel]) -> type[EntityModel]:
     if not getattr(model_cls, "name", None) or not getattr(model_cls, "table_name", None):
-        raise ValueError(f"{model_cls.__name__} doit définir 'name' et 'table_name'.")
+        raise ValueError(f"{model_cls.__name__} must define 'name' and 'table_name'.")
+    for attr in ("hidden_fields", "anonymized_fields"):
+        value = getattr(model_cls, attr, None)
+        if isinstance(value, str):
+            raise TypeError(
+                f"{model_cls.__name__}.{attr} must be a collection of column names, "
+                f"not a bare string ({value!r}). Did you forget a trailing comma, "
+                f'e.g. ("{value}",)?'
+            )
     _REGISTRY[model_cls.name] = model_cls
     return model_cls
 

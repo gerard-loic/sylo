@@ -1,4 +1,5 @@
 import secrets
+import uuid
 
 import bcrypt
 
@@ -21,3 +22,10 @@ def verify_password(password: str, hashed: str) -> bool:
 
 def generate_token() -> str:
     return secrets.token_urlsafe(48)
+
+
+def anonymized_value() -> str:
+    """Valeur de remplacement d'un attribut anonymisé lors d'une suppression :
+    préfixe `***` suivi d'une chaîne unique, pour rester repérable comme donnée
+    anonymisée sans divulguer la valeur d'origine."""
+    return f"***{uuid.uuid4().hex}"

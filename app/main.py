@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.auth import enforce_auth, mark_public
@@ -35,6 +36,16 @@ async def lifespan(app: FastAPI):
 # + permission requis par défaut. Les exceptions (ex: /users/login) sont déclarées
 # dans le code via `mark_public()`, voir app/entities/user/routes.py.
 app = FastAPI(title="Sylo API", dependencies=[Depends(enforce_auth)], lifespan=lifespan)
+
+# Auth = Bearer token (voir app/auth.py), pas de cookie : allow_credentials reste à
+# False, ce qui autorise allow_origins=["*"] (interdit par la spec si credentials).
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_settings.cors_allow_origins,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 mark_public("/health", "GET")
 

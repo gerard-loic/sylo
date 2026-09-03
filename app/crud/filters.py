@@ -4,7 +4,7 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, func, or_
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.crud.columns import python_type
@@ -17,14 +17,36 @@ from app.exceptions import InvalidFilterError
 #   atom       := "(" or_expr ")" | comparison
 #   comparison := IDENT operator value
 #   operator   := "==" | "!=" | "<=" | ">=" | "<" | ">" | "IN" | "NOT" "IN" | "LIKE"
+#                 | "SOUNDEX" | "SIMILAR"
 #   value      := STRING | NUMBER | "true" | "false" | "null" | "(" value ("," value)* ")"
 #
 # LIKE fait une recherche approximative insensible à la casse (ex: `name LIKE 'ali'`
 # trouve "Alice") : la valeur est traitée comme du texte brut, pas un motif SQL — les
 # caractères spéciaux `%`/`_` qu'elle contiendrait sont échappés avant d'être entourés
 # de `%` (voir `_escape_like`), uniquement utilisable sur des champs texte.
+#
+# SOUNDEX fait une recherche phonétique (ex: `name SOUNDEX 'Alisse'` trouve "Alice") :
+# la proximité est mesurée par `difference()` de l'extension PostgreSQL `fuzzystrmatch`
+# (score 0..4), le match est retenu à partir de `_SOUNDEX_MIN_SCORE`. Requiert
+# `CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;` sur la base, uniquement sur des
+# champs texte. Le codage Soundex est calibré pour l'anglais et ignore les accents.
+#
+# SIMILAR fait une recherche lexicale tolérante aux fautes de frappe (ex:
+# `name SIMILAR 'Alisse'` trouve "Alice") : la proximité est mesurée par `similarity()`
+# de l'extension PostgreSQL `pg_trgm` (score 0..1, sur les trigrammes), le match est
+# retenu à partir de `_SIMILARITY_MIN_SCORE`. Requiert
+# `CREATE EXTENSION IF NOT EXISTS pg_trgm;` sur la base, uniquement sur des champs
+# texte. Insensible à la casse, mais pas aux accents (combiner avec `unaccent` au
+# besoin).
 
-_KEYWORDS = {"AND", "OR", "IN", "NOT", "LIKE", "TRUE", "FALSE", "NULL"}
+_KEYWORDS = {"AND", "OR", "IN", "NOT", "LIKE", "SOUNDEX", "SIMILAR", "TRUE", "FALSE", "NULL"}
+
+# Score minimal de `difference()` (0..4) pour qu'une comparaison SOUNDEX matche.
+_SOUNDEX_MIN_SCORE = 3
+
+# Score minimal de `similarity()` (0..1) pour qu'une comparaison SIMILAR matche
+# (0.3 = seuil par défaut de pg_trgm).
+_SIMILARITY_MIN_SCORE = 0.3
 
 _TOKEN_RE = re.compile(
     r"""
@@ -166,10 +188,10 @@ class _Parser:
             self._advance()
             self._expect("IN")
             return "NOT IN"
-        if token.kind == "LIKE":
+        if token.kind in ("LIKE", "SOUNDEX", "SIMILAR"):
             self._advance()
-            return "LIKE"
-        raise InvalidFilterError(f"Opérateur attendu, trouvé {token.kind} ({token.value!r}).")
+            return token.kind
+        raise InvalidFilterError(f"Operand expected, found {token.kind} ({token.value!r}).")
 
     def _value(self, op: str) -> Any:
         if op in ("IN", "NOT IN"):
@@ -186,7 +208,7 @@ class _Parser:
         token = self._advance()
         if token.kind in ("STRING", "NUMBER", "BOOL", "NULL"):
             return token.value
-        raise InvalidFilterError(f"Valeur attendue, trouvée {token.kind} ({token.value!r}).")
+        raise InvalidFilterError(f"Value expected, found {token.kind} ({token.value!r}).")
 
 
 def parse_filter(source: str) -> "Comparison | BoolOp":
@@ -203,26 +225,26 @@ def _coerce(column, raw: Any) -> Any:
     if py_type is bool:
         if isinstance(raw, bool):
             return raw
-        raise InvalidFilterError(f"Valeur booléenne attendue pour '{column.name}', reçu {raw!r}.")
+        raise InvalidFilterError(f"Boolean value expected for '{column.name}', reçu {raw!r}.")
     if isinstance(raw, bool):
-        raise InvalidFilterError(f"Valeur inattendue pour '{column.name}' : {raw!r} n'est pas comparable à ce champ.")
+        raise InvalidFilterError(f"Unexpected value for '{column.name}' : {raw!r} n'est pas comparable à ce champ.")
     if py_type in (int, float, Decimal):
         if not isinstance(raw, (int, float)):
-            raise InvalidFilterError(f"Valeur numérique attendue pour '{column.name}', reçu {raw!r}.")
+            raise InvalidFilterError(f"Numeric value expected for '{column.name}', reçu {raw!r}.")
         try:
             return py_type(raw)
         except (TypeError, ValueError, InvalidOperation):
-            raise InvalidFilterError(f"Valeur numérique invalide pour '{column.name}' : {raw!r}.")
+            raise InvalidFilterError(f"Invalid numeric value for '{column.name}' : {raw!r}.")
     if py_type is datetime:
         try:
             return datetime.fromisoformat(str(raw))
         except ValueError:
-            raise InvalidFilterError(f"Date/heure invalide pour '{column.name}' : {raw!r}.")
+            raise InvalidFilterError(f"Invalid date/time for '{column.name}' : {raw!r}.")
     if py_type is date:
         try:
             return date.fromisoformat(str(raw))
         except ValueError:
-            raise InvalidFilterError(f"Date invalide pour '{column.name}' : {raw!r}.")
+            raise InvalidFilterError(f"Invalid date for '{column.name}' : {raw!r}.")
     return str(raw)
 
 
@@ -238,7 +260,7 @@ def _compile(node: "Comparison | BoolOp", model: type[EntityModel]) -> ColumnEle
         return and_(*clauses) if node.op == "AND" else or_(*clauses)
 
     if node.field not in model.table.columns:
-        raise InvalidFilterError(f"Champ de filtre inconnu pour '{model.name}' : {node.field!r}.")
+        raise InvalidFilterError(f"Unknown filter field for '{model.name}' : {node.field!r}.")
     column = model.table.columns[node.field]
 
     if node.op in ("IN", "NOT IN"):
@@ -248,11 +270,29 @@ def _compile(node: "Comparison | BoolOp", model: type[EntityModel]) -> ColumnEle
     if node.op == "LIKE":
         if python_type(column) is not str:
             raise InvalidFilterError(
-                f"L'opérateur LIKE n'est utilisable que sur des champs texte ('{column.name}' n'en est pas un)."
+                f"LIKE operand is only appliable on text fields ('{column.name}' n'en est pas un)."
             )
         if not isinstance(node.value, str):
-            raise InvalidFilterError(f"L'opérateur LIKE attend une valeur texte pour '{column.name}'.")
+            raise InvalidFilterError(f"LIKE operand requires a text value for '{column.name}'.")
         return column.ilike(f"%{_escape_like(node.value)}%", escape="\\")
+
+    if node.op == "SOUNDEX":
+        if python_type(column) is not str:
+            raise InvalidFilterError(
+                f"SOUNDEX operand is only appliable on text fields ('{column.name}' n'en est pas un)."
+            )
+        if not isinstance(node.value, str):
+            raise InvalidFilterError(f"SOUNDEX operand requires a text value for '{column.name}'.")
+        return func.difference(column, node.value) >= _SOUNDEX_MIN_SCORE
+
+    if node.op == "SIMILAR":
+        if python_type(column) is not str:
+            raise InvalidFilterError(
+                f"SIMILAR operand is only appliable on text fields ('{column.name}' n'en est pas un)."
+            )
+        if not isinstance(node.value, str):
+            raise InvalidFilterError(f"SIMILAR operand requires a text value for '{column.name}'.")
+        return func.similarity(column, node.value) >= _SIMILARITY_MIN_SCORE
 
     value = _coerce(column, node.value)
     if node.op == "==":
@@ -267,12 +307,12 @@ def _compile(node: "Comparison | BoolOp", model: type[EntityModel]) -> ColumnEle
         return column <= value
     if node.op == ">=":
         return column >= value
-    raise InvalidFilterError(f"Opérateur non supporté : {node.op!r}.")  # pragma: no cover
+    raise InvalidFilterError(f"Non supported operand : {node.op!r}.")  # pragma: no cover
 
 
 def compile_filter(source: str, model: type[EntityModel]) -> ColumnElement:
     """Parse une expression de filtre (ex: `status == 'active' AND (age >= 18 OR role IN
-    ('admin', 'owner') OR name LIKE 'ali')`) et la compile en clause SQLAlchemy filtrable
-    sur `model`.
+    ('admin', 'owner') OR name LIKE 'ali' OR name SOUNDEX 'Alisse' OR name SIMILAR
+    'Alisse')`) et la compile en clause SQLAlchemy filtrable sur `model`.
     """
     return _compile(parse_filter(source), model)

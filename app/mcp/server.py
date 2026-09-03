@@ -113,7 +113,7 @@ def build_session_manager(app: FastAPI) -> StreamableHTTPSessionManager:
     async def handle_call_tool(name: str, arguments: dict):
         operation = operations_by_name.get(name)
         if operation is None:
-            raise ValueError(f"Outil inconnu : {name}")
+            raise ValueError(f"Unknown tool : {name}")
 
         token = _bearer_token(server.request_context.request)
         if operation.permission_uid is not None and token is None:

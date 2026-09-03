@@ -164,7 +164,7 @@ def parse_exclude_file(path: Path) -> tuple[set[str], set[tuple[str, str]], set[
         if sep:
             if not route or not method:
                 raise ValueError(
-                    f"SYLO_MCP_EXCLUDE_FILE : ligne {lineno} invalide (attendu ROUTE:METHOD) : {raw_line!r}"
+                    f"SYLO_MCP_EXCLUDE_FILE : line {lineno} invalid (expected ROUTE:METHOD) : {raw_line!r}"
                 )
             if method.strip() == "*":
                 prefixes.add(_normalize_route(route))

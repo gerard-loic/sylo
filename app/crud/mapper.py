@@ -31,8 +31,15 @@ def build_orm_mappings(engine: Engine) -> None:
         )
         pk_columns = list(model.table.primary_key.columns)
         if not pk_columns:
-            raise RuntimeError(f"La table '{model.table_name}' n'a pas de clé primaire.")
+            raise RuntimeError(f"La table '{model.table_name}' does not have a primary key.")
         model.pk_column = pk_columns[0]
+
+        unknown_anonymized = set(model.anonymized_fields) - set(model.table.c.keys())
+        if unknown_anonymized:
+            raise RuntimeError(
+                f"Entity '{model.table_name}' does not have column(s) "
+                f"{sorted(unknown_anonymized)} configured dans anonymized_fields."
+            )
 
     for model in models.values():
         for rel in model.relationships:
@@ -86,4 +93,4 @@ def _build_relationship_property(model, target_model, rel):
             uselist=True,
             viewonly=True,
         )
-    raise TypeError(f"Type de relation non supporté : {rel!r}")
+    raise TypeError(f"Relation type non supported : {rel!r}")

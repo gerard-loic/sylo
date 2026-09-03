@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, Iterable
 
 from sqlalchemy import delete, insert
@@ -5,6 +6,7 @@ from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.exceptions import NotFoundError
+from app.security import anonymized_value
 from app.crud.mapper import get_association_table
 from app.crud.model import EntityModel
 from app.crud.relationships import ManyToMany
@@ -74,8 +76,16 @@ class BaseCRUDMethods:
         return self.get(db, item_id, with_)
 
     def delete(self, db: Session, item_id: Any) -> None:
+        """Suppression logique : la ligne n'est pas retirée de la base, seul
+        `deleted_at` est horodaté (elle disparaît alors des `list`/`get`, qui
+        filtrent sur `_not_deleted()`). Les colonnes déclarées dans
+        `model.anonymized_fields` voient leur valeur remplacée par une chaîne
+        unique préfixée par `***`.
+        """
         obj = self._get_raw_or_404(db, item_id)
-        db.delete(obj)
+        obj.deleted_at = datetime.utcnow()
+        for field in self.model.anonymized_fields:
+            setattr(obj, field, anonymized_value())
         db.commit()
 
     def _get_raw_or_404(self, db: Session, item_id: Any, *, update: dict | None = None) -> Any:

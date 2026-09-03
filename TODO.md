@@ -11,17 +11,17 @@
 - [x] Gestion orderBy [EN COURS]
 - [x] Gestion limit [EN COURS]
 - [x] Gestion de la pagination [EN COURS]
-- [ ] Recherche soundex
+- [x] Recherche soundex
 - [x] Ne jamais redescendre deleted_at
 - [x] Créa des permissions, prendre en compte un fichier de conf
 - [x] Pouvoir masquer des attributs
-- [ ] Erreurs en anglais
-- [ ] Suppression : anonymisation
-- [ ] lower case
+- [x] Erreurs en anglais
+- [x] Suppression : anonymisation
+- [x] lower case
 - [ ] cloisonnement
 - [ ] Review
 - [ ] Reedme
-- [ ] Versionning + docker
+- [ ] Versionning + docker [EN COURS]
 - [x] Bruno
-- [ ] Fichier de config intégré pour les permissions, routes, permissions à créer manuellement
+- [x] Fichier de config intégré pour les permissions, routes, permissions à créer manuellement
 - [x] Vérifier que le serveur MCP donne des informations sur l'utilisation des filtres

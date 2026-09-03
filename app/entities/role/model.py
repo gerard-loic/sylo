@@ -15,3 +15,4 @@ class RoleModel(EntityModel):
             remote_key="permission_id",
         )
     ]
+    anonymized_fields = ("uid",)

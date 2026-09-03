@@ -24,7 +24,11 @@ _FILTER_DESCRIPTION = (
     "Expression de filtre sur les colonnes de l'entité, ex: \"status == 'active' AND "
     "(age >= 18 OR role IN ('admin', 'owner') OR name LIKE 'ali')\". Opérateurs : == "
     "!= < > <= >= IN, NOT IN, LIKE (recherche insensible à la casse, 'contient', "
-    "uniquement sur des champs texte). AND est prioritaire sur OR, parenthèses "
+    "uniquement sur des champs texte), SOUNDEX (recherche phonétique via l'extension "
+    "PostgreSQL fuzzystrmatch, ex: name SOUNDEX 'Alisse', champs texte uniquement), "
+    "SIMILAR (recherche lexicale tolérante aux fautes via l'extension PostgreSQL "
+    "pg_trgm, ex: name SIMILAR 'Alisse', champs texte uniquement). "
+    "AND est prioritaire sur OR, parenthèses "
     "supportées. Valeurs : nombre, 'texte' entre quotes, true/false, null, ou liste "
     "entre parenthèses pour IN/NOT IN, ex: role IN ('admin', 'owner')."
 )

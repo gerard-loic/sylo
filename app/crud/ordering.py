@@ -27,7 +27,7 @@ def compile_order_by(source: str, model: type[EntityModel]) -> list[ColumnElemen
                 f"Tri invalide : {part!r} (format attendu 'champ.ASC' ou 'champ.DESC')."
             )
         if field not in model.table.columns:
-            raise InvalidSortError(f"Champ de tri inconnu pour '{model.name}' : {field!r}.")
+            raise InvalidSortError(f"Sortable field unknown for '{model.name}' : {field!r}.")
 
         column = model.table.columns[field]
         clauses.append(column.asc() if direction == "ASC" else column.desc())

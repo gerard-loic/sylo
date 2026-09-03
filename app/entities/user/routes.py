@@ -66,10 +66,10 @@ def build_router(model, methods, *, create_validator, update_validator):
         # correspondre à un utilisateur et `password` doit être fourni. En cas de
         # succès, `initial_token` est consommé (remis à NULL).
         if not data.get("password"):
-            raise UnauthorizedError("Mot de passe requis pour définir le mot de passe initial.")
+            raise UnauthorizedError("Password required")
         user = methods.get_by_initial_token(db, item_id)
         if user is None:
-            raise UnauthorizedError("Token invalide.")
+            raise UnauthorizedError("Invalid token")
         obj = methods.update(
             db,
             getattr(user, model.pk_name()),

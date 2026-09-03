@@ -16,3 +16,4 @@ class UserModel(EntityModel):
             remote_key="role_id",
         ),
     ]
+    anonymized_fields = ("email", "first_name", "last_name")
