@@ -16,7 +16,7 @@ Usage:
     python scripts/sync_permissions.py --exclude-route /health
     python scripts/sync_permissions.py --exclude-route /users --exclude-route /roles
     python scripts/sync_permissions.py --exclude "/permissions/{item_id}:DELETE"
-    python scripts/sync_permissions.py --config-file generate-config.json
+    python scripts/sync_permissions.py --config-file custom/config/generate-config.json
 
 Fichier --config-file (JSON) :
     - `exclude.permissions` : routes/méthodes à ne pas créer. Même syntaxe que
@@ -76,7 +76,7 @@ def parse_args() -> argparse.Namespace:
             "routes/méthodes à ne pas créer (même syntaxe que --exclude-route / "
             "--exclude : 'users' ou 'users/login:POST'). `additionnal.permissions` "
             "liste des permissions libres à créer en plus (un uid par entrée, ex: "
-            "'KNOWLEDGE_UNLIMITED'). Exemple : generate-config.json."
+            "'KNOWLEDGE_UNLIMITED'). Exemple : custom/config/generate-config.json."
         ),
     )
     parser.add_argument(

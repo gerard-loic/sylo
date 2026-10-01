@@ -18,7 +18,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _CORE_TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 # Surcharge projet : un fichier de même chemin relatif y est prioritaire sur le
 # core, et on peut y ajouter de nouveaux gabarits/assets sans toucher à app/.
-_OVERLAY_TEMPLATES_DIR = _PROJECT_ROOT / "mails"
+_OVERLAY_TEMPLATES_DIR = _PROJECT_ROOT / "custom" / "mails"
 
 _CID_PATTERN = re.compile(r'cid:([\w.-]+)')
 
@@ -46,8 +46,8 @@ class MailService:
     """Envoie des emails à partir de gabarits Jinja2.
 
     Les gabarits par défaut sont embarqués dans le core, sous `app/mail/templates/`.
-    Le dossier `mails/` (racine du projet) permet de les surcharger : un fichier de
-    même chemin relatif y est prioritaire (ex: `mails/welcome/html.j2` remplace
+    Le dossier `custom/mails/` permet de les surcharger : un fichier de
+    même chemin relatif y est prioritaire (ex: `custom/mails/welcome/html.j2` remplace
     celui du core), et on peut y ajouter de nouveaux gabarits ou de nouveaux
     assets sans toucher à `app/`.
 
@@ -58,7 +58,7 @@ class MailService:
     Une image référencée dans le HTML via `<img src="cid:<clé>">` est automatiquement
     intégrée à l'email : le fichier `<clé>.*` est cherché dans `<nom>/assets/`
     (spécifique au gabarit) puis dans `assets/` (partagé, ex: gabarit.j2), en
-    regardant d'abord dans `mails/` (surcharge) puis dans `app/mail/templates/` (core).
+    regardant d'abord dans `custom/mails/` (surcharge) puis dans `app/mail/templates/` (core).
     """
 
     def send(
@@ -111,7 +111,7 @@ class MailService:
     def _embed_images(self, message: EmailMessage, html_body: str, template: str) -> None:
         """Intègre chaque image référencée en `cid:<nom>` dans le HTML. Le fichier est
         cherché par nom (`<nom>.*`, extension libre), du plus spécifique/prioritaire au
-        plus générique : surcharge (`mails/`) puis core (`app/mail/templates/`), gabarit
+        plus générique : surcharge (`custom/mails/`) puis core (`app/mail/templates/`), gabarit
         puis partagé (ex: gabarit.j2). Aucune liste à maintenir côté Python : il suffit
         de déposer le fichier au bon endroit.
         """

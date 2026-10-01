@@ -2,19 +2,13 @@
 __pycache__/
 *.pyc
 .env
-entities/*
-!entities/.gitkeep
-!entities/__init__.py
 logs/*
 !logs/.gitkeep
-# Gabarits d'emails : les gabarits par défaut sont embarqués dans le core
-# (app/mail/templates/, versionné). mails/ ne sert qu'à les surcharger ou à en
-# ajouter de nouveaux ; son contenu reste donc hors du dépôt de base.
-mails/*
-!mails/assets/
-!mails/assets/.gitkeep
 .env
 .env.prod
-# Fichiers de config des scripts fournis au runtime (montés sur /app/config).
-config/*
-!config/.gitkeep
+# Code propre à chaque projet (entités, gabarits d'emails, config, scripts, libs) :
+# hors du dépôt de base, seul le squelette (README + .gitkeep) est versionné.
+custom/**
+!custom/**/
+!custom/**/.gitkeep
+!custom/README.md

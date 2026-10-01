@@ -10,7 +10,7 @@ Avec --config-file, associe aussi au rôle les permissions listées dans la clé
 Usage:
     python scripts/create_role.py --name "Administrateur" --uid ADMIN
     python scripts/create_role.py --name "Gestionnaire" --uid MANAGER --dry-run
-    python scripts/create_role.py --name "Admin" --uid ADMIN --config-file generate-config.json
+    python scripts/create_role.py --name "Admin" --uid ADMIN --config-file custom/config/generate-config.json
 """
 
 import argparse

@@ -9,23 +9,16 @@ docker
 Makefile
 README.md
 TODO.md
-# Le package `entities` doit exister dans l'image (app/main.py fait
-# `from entities import register_entities`), mais son contenu est propre à
-# chaque projet et fourni au runtime (volume / bind mount), jamais figé ici.
-entities/*
-!entities/__init__.py
+# custom/ : code propre à chaque projet (entités, gabarits d'emails, config,
+# scripts, libs), fourni au runtime via un volume monté sur /app/custom, jamais
+# figé dans l'image. Seul custom/requirements.txt est gardé : ses dépendances
+# sont installées au build (voir docker/Dockerfile).
+custom/**
+!custom/requirements.txt
 
 # logs/ : sorties runtime uniquement, le dossier se recrée seul (app/logs.py).
 logs/*
 !logs/.gitkeep
-
-# mails/ : les gabarits par défaut SONT embarqués dans l'image ; un projet peut
-# les surcharger au runtime via un volume monté sur /app/mails.
-
-# config/ : fichiers de config des scripts (generate-config.json...), fournis au
-# runtime via un volume monté sur /app/config, jamais figés dans l'image.
-config/*
-!config/.gitkeep
 
 # Données locales et secrets — jamais dans une couche d'image. Les variables
 # SYLO_* sont fournies au runtime (env_file / -e), voir .env.example.

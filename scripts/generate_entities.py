@@ -1,5 +1,5 @@
 """Découvre toutes les tables de la base et génère, pour chacune, une entité CRUD
-sous `entities/<nom>/` (`__init__.py`, `model.py`, `methods.py`, `routes.py`) : les
+sous `custom/entities/<nom>/` (`__init__.py`, `model.py`, `methods.py`, `routes.py`) : les
 relations ManyToOne / OneToMany / ManyToMany sont déduites des clés étrangères
 réfléchies en base, y compris les tables d'association N:N.
 
@@ -12,18 +12,18 @@ clé primaire simple est traitée comme une entité.
 Une table est automatiquement ignorée (aucun fichier écrit) si :
   - son nom (ou son nom singulier) figure dans la clé `exclude.routes` du
     --config-file ;
-  - une entité du même nom existe déjà sous `entities/` (sauf --force) ou sous
+  - une entité du même nom existe déjà sous `custom/entities/` (sauf --force) ou sous
     `app/entities/` (jamais écrasée, c'est le "coeur" de l'application).
 
 Une relation dont la cible n'est ni générée dans cette exécution, ni déjà
-enregistrée (`entities/` ou `app/entities/`) est omise (avec un avertissement) :
+enregistrée (`custom/entities/` ou `app/entities/`) est omise (avec un avertissement) :
 `app/crud/mapper.py` planterait au démarrage sur une cible introuvable.
 
 Usage:
     python scripts/generate_entities.py --dry-run
     python scripts/generate_entities.py
-    python scripts/generate_entities.py --config-file generate-config.json
-    python scripts/generate_entities.py --config-file generate-config.json --force
+    python scripts/generate_entities.py --config-file custom/config/generate-config.json
+    python scripts/generate_entities.py --config-file custom/config/generate-config.json --force
 
 Fichier --config-file (JSON) : les tables listées dans `exclude.routes` (par nom
 de table ou nom d'entité singulier) ne sont jamais générées.
@@ -46,7 +46,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from sqlalchemy import inspect  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-ENTITIES_DIR = ROOT / "entities"
+ENTITIES_DIR = ROOT / "custom" / "entities"
 CORE_ENTITIES_DIR = ROOT / "app" / "entities"
 
 _KIND_ORDER = {"ManyToOne": 0, "OneToMany": 1, "ManyToMany": 2}
@@ -73,7 +73,7 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Fichier de configuration JSON. Les tables listées dans la clé "
             "`exclude.routes` (par nom de table ou nom d'entité singulier) ne sont "
-            "jamais générées. Exemple : generate-config.json."
+            "jamais générées. Exemple : custom/config/generate-config.json."
         ),
     )
     parser.add_argument(
@@ -81,7 +81,7 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help=(
             "Régénère (écrase model.py/methods.py/routes.py) une entité dont le "
-            "dossier existe déjà sous entities/. Sans cette option, une entité déjà "
+            "dossier existe déjà sous custom/entities/. Sans cette option, une entité déjà "
             "présente est laissée intacte."
         ),
     )
@@ -367,7 +367,7 @@ def main() -> None:
         if table_name in override_by_table and not args.force:
             skipped.append((
                 table_name,
-                f"déjà implémentée dans entities/{override_by_table[table_name]}/ (utiliser --force pour régénérer)",
+                f"déjà implémentée dans custom/entities/{override_by_table[table_name]}/ (utiliser --force pour régénérer)",
             ))
             continue
         to_generate[table_name] = entity_name
@@ -416,7 +416,7 @@ def main() -> None:
         (entity_dir / "methods.py").write_text(render_methods(entity_name), encoding="utf-8")
         (entity_dir / "routes.py").write_text(render_routes(), encoding="utf-8")
 
-    print(f"\n{len(plan)} entité(s) générée(s) sous entities/.")
+    print(f"\n{len(plan)} entité(s) générée(s) sous custom/entities/.")
 
 
 if __name__ == "__main__":

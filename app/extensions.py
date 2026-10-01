@@ -9,14 +9,21 @@ from app.crud.mapper import build_orm_mappings
 from app.crud.model import get_all_models
 from app.crud.validators import build_default_validator
 
+# Tout le code propre à un projet issu de cette base vit dans custom/ (voir
+# custom/README.md), jamais dans app/. Ce module en est le point d'entrée.
+#
 # Les entités "coeur" (CRUD permission/role/sendmail/user/usertoken) vivent dans
 # app/entities/. Pour surcharger intégralement l'une d'elles (model.py, methods.py,
-# routes.py, validators/...), il suffit de créer un dossier du même nom ici, dans
-# entities/ : ce dossier est alors utilisé à la place de son équivalent dans
-# app/entities/. C'est aussi ici que vivent les entités propres au projet, qui
+# routes.py, validators/...), il suffit de créer un dossier du même nom dans
+# custom/entities/ : ce dossier est alors utilisé à la place de son équivalent dans
+# app/entities/. C'est aussi là que vivent les entités propres au projet, qui
 # n'ont pas d'équivalent dans app/entities/.
+_ROOT_DIR = Path(__file__).resolve().parent.parent
 _CORE_PACKAGE = "app.entities"
-_OVERRIDE_PACKAGE = "entities"
+_CORE_DIR = _ROOT_DIR / "app" / "entities"
+_CUSTOM_PACKAGE = "custom"
+_OVERRIDE_PACKAGE = f"{_CUSTOM_PACKAGE}.entities"
+_OVERRIDE_DIR = _ROOT_DIR / "custom" / "entities"
 
 
 def _discover_package_names(directory: Path) -> set[str]:
@@ -43,11 +50,8 @@ def _resolve_validator(package: str, entity_name: str, mode: str, model):
 
 
 def register_entities(app: FastAPI, engine: Engine) -> None:
-    override_dir = Path(__file__).resolve().parent
-    core_dir = override_dir.parent / "app" / "entities"
-
-    override_names = _discover_package_names(override_dir)
-    core_names = _discover_package_names(core_dir)
+    override_names = _discover_package_names(_OVERRIDE_DIR)
+    core_names = _discover_package_names(_CORE_DIR)
     entity_names = sorted(core_names | override_names)
     packages = {
         name: _OVERRIDE_PACKAGE if name in override_names else _CORE_PACKAGE
@@ -79,3 +83,16 @@ def register_entities(app: FastAPI, engine: Engine) -> None:
             update_validator=update_validator,
         )
         app.include_router(router)
+
+
+def run_custom_setup(app: FastAPI) -> None:
+    """Appelle `setup(app)` si custom/__init__.py le définit : point d'extension pour
+    tout ce qui n'est pas une entité (routers transverses, middlewares, handlers
+    d'exceptions, routes publiques via `mark_public()`...). Optionnel : sans
+    custom/__init__.py, ou sans `setup`, rien n'est fait.
+    """
+    if not (_ROOT_DIR / "custom" / "__init__.py").is_file():
+        return
+    setup = getattr(importlib.import_module(_CUSTOM_PACKAGE), "setup", None)
+    if setup is not None:
+        setup(app)

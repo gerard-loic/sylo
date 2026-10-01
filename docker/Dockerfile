@@ -17,9 +17,12 @@ RUN pip install --upgrade pip && \
 
 COPY . .
 
+# Dépendances propres au projet (absentes de l'image publiée depuis le dépôt de base).
+RUN if [ -f custom/requirements.txt ]; then pip install -r custom/requirements.txt; fi
+
 ENV HOME=/home/app
 
-# app doit pouvoir écrire dans logs/ et mails/
+# app doit pouvoir écrire dans logs/ et custom/
 RUN chown -R app:app /app /home/app
 
 USER app

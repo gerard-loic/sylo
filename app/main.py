@@ -10,9 +10,9 @@ from app.auth import enforce_auth, mark_public
 from app.config import get_settings
 from app.database import engine
 from app.exceptions import ApiError
+from app.extensions import register_entities, run_custom_setup
 from app.logs import configure_error_logger
 from app.responses import error_response
-from entities import register_entities
 
 logger = configure_error_logger(logging.getLogger("sylo_api"))
 _settings = get_settings()
@@ -85,10 +85,12 @@ def health_check() -> dict:
 
 
 register_entities(app, engine)
+run_custom_setup(app)
 
 if _settings.mcp_enabled:
-    # Doit être construit après register_entities() : le catalogue d'outils MCP est
-    # dérivé des routes réellement enregistrées (voir app/mcp/catalog.py).
+    # Doit être construit après register_entities() et run_custom_setup() : le
+    # catalogue d'outils MCP est dérivé des routes réellement enregistrées (voir
+    # app/mcp/catalog.py).
     from app.mcp.server import build_session_manager
 
     _mcp_manager = build_session_manager(app)

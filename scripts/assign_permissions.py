@@ -26,7 +26,7 @@ Le fichier d'exclusion, s'il est fourni, filtre ensuite cette sélection.
 Usage:
     python scripts/assign_permissions.py --role-uid ADMIN
     python scripts/assign_permissions.py --role-uid ADMIN --exclude-file except.txt
-    python scripts/assign_permissions.py --role-uid ADMIN --config-file generate-config.json
+    python scripts/assign_permissions.py --role-uid ADMIN --config-file custom/config/generate-config.json
     python scripts/assign_permissions.py --role-uid ADMIN --dry-run
 """
 
@@ -63,7 +63,7 @@ def parse_args() -> argparse.Namespace:
             "Fichier de configuration JSON. La clé `roles.<role-uid>` liste les "
             "permissions à associer au rôle : '*' (toutes), 'route:METHOD', "
             "'route:*' (toutes les méthodes de la route) ou un uid de permission "
-            "nommée. Exemple : generate-config.json."
+            "nommée. Exemple : custom/config/generate-config.json."
         ),
     )
     parser.add_argument(
