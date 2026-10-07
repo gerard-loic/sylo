@@ -18,6 +18,10 @@ from app.crud.validators import build_default_validator
 # custom/entities/ : ce dossier est alors utilisé à la place de son équivalent dans
 # app/entities/. C'est aussi là que vivent les entités propres au projet, qui
 # n'ont pas d'équivalent dans app/entities/.
+#
+# model.py est optionnel : une entité sans model.py (routes purement spécifiques,
+# sans table derrière) ne fournit que routes.py, dont `build_router()` est alors
+# appelé sans argument (pas de modèle, de methods ni de validateurs CRUD).
 _ROOT_DIR = Path(__file__).resolve().parent.parent
 _CORE_PACKAGE = "app.entities"
 _CORE_DIR = _ROOT_DIR / "app" / "entities"
@@ -58,14 +62,28 @@ def register_entities(app: FastAPI, engine: Engine) -> None:
         for name in entity_names
     }
 
+    model_dirs = {_OVERRIDE_PACKAGE: _OVERRIDE_DIR, _CORE_PACKAGE: _CORE_DIR}
+    modelless_names = {
+        name
+        for name in entity_names
+        if not (model_dirs[packages[name]] / name / "model.py").is_file()
+    }
+
     for entity_name in entity_names:
-        importlib.import_module(f"{packages[entity_name]}.{entity_name}.model")
+        if entity_name not in modelless_names:
+            importlib.import_module(f"{packages[entity_name]}.{entity_name}.model")
 
     build_orm_mappings(engine)
     models = get_all_models()
 
     for entity_name in entity_names:
         package = packages[entity_name]
+
+        if entity_name in modelless_names:
+            routes_module = importlib.import_module(f"{package}.{entity_name}.routes")
+            app.include_router(routes_module.build_router())
+            continue
+
         model = models[entity_name]
 
         methods_module = importlib.import_module(f"{package}.{entity_name}.methods")

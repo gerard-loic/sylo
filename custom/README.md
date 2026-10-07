@@ -24,6 +24,31 @@ Une entité `custom/entities/<nom>/` (`model.py`, `methods.py`, `routes.py`,
 `app/entities/<nom>/` existe, la version de `custom/` la remplace intégralement.
 `./cmd.sh generate_entities` écrit ici.
 
+`model.py` est optionnel : pour des routes purement spécifiques, sans table
+derrière, seul `routes.py` est requis (avec `__init__.py`). Sa fonction
+`build_router()` est alors appelée **sans argument** (pas de CRUD généré, pas de
+`methods.py` ni de validateurs chargés) :
+
+```python
+# custom/entities/stats/routes.py
+from fastapi import APIRouter
+
+from app.responses import success_response
+
+
+def build_router() -> APIRouter:
+    router = APIRouter(prefix="/stats", tags=["stats"])
+
+    @router.get("/summary")
+    def summary():
+        return success_response({"ok": True})
+
+    return router
+```
+
+Ces routes sont soumises à l'authentification, prises en compte par
+`sync_permissions` et exposées en MCP comme les autres.
+
 ## mails/
 
 Un fichier de même chemin relatif que dans `app/mail/templates/` y est prioritaire
