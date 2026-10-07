@@ -54,7 +54,12 @@ mark_public("/health", "GET")
 def handle_api_error(request: Request, exc: ApiError) -> JSONResponse:
     if exc.status_code >= 500:
         logger.error(
-            "Erreur %s sur %s %s : %s", exc.status_code, request.method, request.url.path, exc.message
+            "Erreur %s sur %s %s : %s",
+            exc.status_code,
+            request.method,
+            request.url.path,
+            exc.message,
+            exc_info=exc,
         )
     return JSONResponse(
         status_code=exc.status_code,
@@ -72,7 +77,9 @@ def handle_validation_error(request: Request, exc: RequestValidationError) -> JS
 
 @app.exception_handler(Exception)
 def handle_unexpected_error(request: Request, exc: Exception) -> JSONResponse:
-    logger.error("Erreur non gérée sur %s %s : %s", request.method, request.url.path, exc)
+    logger.error(
+        "Erreur non gérée sur %s %s : %r", request.method, request.url.path, exc, exc_info=exc
+    )
     return JSONResponse(
         status_code=500,
         content=error_response("internal_error", "Erreur interne du serveur."),
