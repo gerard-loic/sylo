@@ -1,4 +1,5 @@
 import logging
+import traceback
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
@@ -80,9 +81,17 @@ def handle_unexpected_error(request: Request, exc: Exception) -> JSONResponse:
     logger.error(
         "Erreur non gérée sur %s %s : %r", request.method, request.url.path, exc, exc_info=exc
     )
+    # Détails techniques renvoyés au client uniquement en mode debug (SYLO_DEBUG).
+    details = None
+    if _settings.debug:
+        details = {
+            "type": f"{type(exc).__module__}.{type(exc).__qualname__}",
+            "message": str(exc),
+            "traceback": traceback.format_exception(exc),
+        }
     return JSONResponse(
         status_code=500,
-        content=error_response("internal_error", "Erreur interne du serveur."),
+        content=error_response("internal_error", "Erreur interne du serveur.", details=details),
     )
 
 

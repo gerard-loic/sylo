@@ -187,6 +187,9 @@ SYLO_SMTP_USE_SSL=false     # SSL direct (port 465) ; ne pas activer avec TLS
 SYLO_MAIL_FROM_ADDRESS=no-reply@exemple.fr
 SYLO_MAIL_FROM_NAME=Mon projet
 
+# Mode debug : détail technique des erreurs 500 dans la réponse (jamais en production)
+SYLO_DEBUG=false
+
 # Sécurité
 SYLO_PASSWORD_HASH_ROUNDS=12        # coût bcrypt (plus haut = plus lent et plus sûr)
 SYLO_AUTH_TOKEN_TTL_MINUTES=1440    # durée de validité d'un token de connexion
@@ -212,6 +215,7 @@ SYLO_MCP_EXCLUDE_FILE=custom/config/mcp-exclude.txt
 | `SYLO_SMTP_USER` / `_PASSWORD` | vide | Identifiants SMTP (optionnels) |
 | `SYLO_SMTP_USE_TLS` / `_USE_SSL` | `true` / `false` | Chiffrement SMTP |
 | `SYLO_MAIL_FROM_ADDRESS` / `_NAME` | `no-reply@sylo.local` / `Sylo` | Expéditeur des emails |
+| `SYLO_DEBUG` | `false` | Renvoie le détail des erreurs 500 (type, message, trace) |
 | `SYLO_PASSWORD_HASH_ROUNDS` | `12` | Coût du hachage bcrypt |
 | `SYLO_AUTH_TOKEN_TTL_MINUTES` | `1440` | Durée de vie d'un token (24 h) |
 | `SYLO_PASSWORD_SETUP_URL_PREFIX` | `http://monsite.fr/choixmotdepasse?token=` | Lien de choix du mot de passe |

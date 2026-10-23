@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     # ligne, "route" ou "route:METHODE", lignes vides et '#...' ignorées).
     mcp_exclude_file: str | None = None
 
+    # Mode debug : si activé, les réponses 500 (erreurs non gérées) incluent dans
+    # `error.details` le type, le message et la trace de l'exception. À ne jamais
+    # activer en production (fuite d'informations internes).
+    debug: bool = False
+
     model_config = SettingsConfigDict(env_file=".env", env_prefix="SYLO_", extra="ignore")
 
 
